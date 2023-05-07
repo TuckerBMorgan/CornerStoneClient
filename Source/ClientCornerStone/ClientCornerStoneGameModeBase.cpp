@@ -15,8 +15,5 @@ void AClientCornerStoneGameModeBase::InitGame
 {
 
     Super::InitGame(MapName, Options, ErrorMessage);
-
-    auto tcp_client = new TcpClient();
-
-
+    this->Client = std::make_shared<TcpClient>(TcpClient());
 }
