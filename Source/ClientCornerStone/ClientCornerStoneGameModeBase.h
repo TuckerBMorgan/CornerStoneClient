@@ -4,19 +4,28 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include <queue>
+#include <string>
+#include <mutex>
+#include "NmJson.h"
 #include "ClientCornerStoneGameModeBase.generated.h"
-
-class TcpClient;
 /**
  * 
  */
+
+
+using json = nlohmann::json;
+
+
 UCLASS()
 class CLIENTCORNERSTONE_API AClientCornerStoneGameModeBase : public AGameModeBase
-{
+{ 
 	GENERATED_BODY()
 protected:
-   std::shared_ptr<TcpClient> Client;
+
 public:
+
+    AClientCornerStoneGameModeBase();
     virtual void InitGame
 
     (
@@ -24,4 +33,19 @@ public:
         const FString& Options,
         FString& ErrorMessage
     ) override;
+
+    //UFUNCTION()
+    virtual void Tick(float) override;
+
+
+private:
+    std::shared_ptr<std::queue<json>> shrd_ptr_for_channel;
+    std::shared_ptr<std::queue<json>> shrd_ptr_for_to_server_channel;
+    std::queue<json> messages;
+    std::mutex message_channel_lock;
+    std::queue<json> message_channel;
+
+    std::mutex to_server_channel_lock;
+    std::queue<json> to_server_message_channel;
+   // std::thread thread_object;
 };

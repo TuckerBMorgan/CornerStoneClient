@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <thread> 
+
 #pragma comment (lib, "Ws2_32.lib")
 #pragma comment (lib, "Mswsock.lib")
 #pragma comment (lib, "AdvApi32.lib")
@@ -15,10 +17,48 @@
 
 #define DEFAULT_BUFLEN 512
 #define DEFAULT_PORT "7878"
-TcpClient::TcpClient()
-{
 
+int recvbuflen = DEFAULT_BUFLEN;
 
+void Listen(SOCKET ConnectSocket, TcpClient* ExternalInterface) {
+
+    int iResult;
+    char recvbuf[DEFAULT_BUFLEN];
+    std::vector<std::string> LocalMessageQueue;
+    int LoopCount = 0;
+    // Receive until the peer closes the connection
+    do {
+
+        iResult = recv(ConnectSocket, recvbuf, recvbuflen, 0);
+        if (iResult > 0) {
+            
+            recvbuf[iResult] = '\0';
+            std::string MessageAsString(recvbuf);
+            LocalMessageQueue.push_back(MessageAsString);        
+        }
+        else if (iResult == 0)
+            printf("Connection closed\n");
+        else
+            printf("recv failed with error: %d\n", WSAGetLastError());
+        LoopCount += 1;
+
+        if (LoopCount == 1000) {
+            if (ExternalInterface->TryAcquireLock()) {
+                ExternalInterface->DumpMessages(LocalMessageQueue);
+                ExternalInterface->ReleaseLock();
+                LocalMessageQueue.clear();
+            }
+            LoopCount = 0;
+        }
+    } while (true);
+
+    // cleanup
+    closesocket(ConnectSocket);
+    WSACleanup();
+
+}
+
+void TcpClient::Init() {
     int argc = 2;
     char* argv[2];
     argv[0] = "localhost";
@@ -31,21 +71,21 @@ TcpClient::TcpClient()
         * ptr = NULL,
         hints;
     const char* sendbuf = "this is a test";
-    //char recvbuf[DEFAULT_BUFLEN];
+
     int iResult;
-    int recvbuflen = DEFAULT_BUFLEN;
+
 
     // Validate the parameters
     if (argc != 2) {
         printf("usage: %s server-name\n", argv[0]);
-     //   return 1;
+        //   return 1;
     }
 
     // Initialize Winsock
     iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (iResult != 0) {
         printf("WSAStartup failed with error: %d\n", iResult);
-     //   return 1;
+        //   return 1;
     }
 
     ZeroMemory(&hints, sizeof(hints));
@@ -58,7 +98,7 @@ TcpClient::TcpClient()
     if (iResult != 0) {
         printf("getaddrinfo failed with error: %d\n", iResult);
         WSACleanup();
-      //  return 1;
+        //  return 1;
     }
 
     // Attempt to connect to an address until one succeeds
@@ -70,7 +110,7 @@ TcpClient::TcpClient()
         if (ConnectSocket == INVALID_SOCKET) {
             //printf("socket failed with error: %ld\n", WSAGetLastError());
             WSACleanup();
-        //    return 1;
+            //    return 1;
         }
 
         // Connect to server.
@@ -97,21 +137,40 @@ TcpClient::TcpClient()
         printf("send failed with error: %d\n", WSAGetLastError());
         closesocket(ConnectSocket);
         WSACleanup();
-       // return 1;
+        // return 1;
     }
 
-   // printf("Bytes Sent: %ld\n", iResult);
+    this->ThreadHandle = std::thread(&Listen, ConnectSocket, this);
+}
 
-    // shutdown the connection since no more data will be sent
-    iResult = shutdown(ConnectSocket, SD_SEND);
-    if (iResult == SOCKET_ERROR) {
-        printf("shutdown failed with error: %d\n", WSAGetLastError());
-        closesocket(ConnectSocket);
-        WSACleanup();
-       // return 1;
+bool TcpClient::TryAcquireLock() {
+    if (this->acnt == 0) {
+        this->acnt = -1;
+        return true;
+    } 
+    return false;
+}
+
+void TcpClient::ReleaseLock() {
+    if (this->acnt == -1) {
+        this->acnt = 0;
     }
 }
 
-TcpClient::~TcpClient()
-{
+void TcpClient::DrainMessages(std::vector<std::string>& MessageLift) {
+    for (int i = 0; i < this->CurrentMessageQueue.size(); i++) {
+        MessageLift.push_back(this->CurrentMessageQueue[i]);
+    }
+    this->CurrentMessageQueue.clear();
+}
+
+void TcpClient::DumpMessages(std::vector<std::string>& MessageDrop) {
+    for (int i = 0; i < MessageDrop.size();i++) {
+        this->CurrentMessageQueue.push_back(MessageDrop[i]);
+    }
+}
+
+
+TcpClient::~TcpClient() {
+
 }
