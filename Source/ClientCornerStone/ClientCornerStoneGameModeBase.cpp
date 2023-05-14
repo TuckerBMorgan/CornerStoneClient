@@ -12,6 +12,8 @@
 #include "NmJson.h"
 #include "NetworkingThread.h"
 #include "CoreMinimal.h"
+#include "Public/EventTypes.h"
+
 using json = nlohmann::json;
 
 
@@ -58,12 +60,10 @@ void AClientCornerStoneGameModeBase::Tick(float DeltaTime) {
 
     while (messages.empty() == false) {
         auto new_message = std::move(messages.front());
-        if (new_message["eventType"] == "AddController") {
-            auto game_state = GetGameState<ABattleGameState>();
-            auto hand_controller = NewObject<UHandController>(UHandController::StaticClass());
-            hand_controller->Setup(new_message["id"]);
-            game_state->AddHandController(hand_controller);
-        }
+
+        EventType* NewEvent = CreateEventFromJson(new_message);
+        auto game_state = GetGameState<ABattleGameState>();
+        NewEvent->Execute(game_state);
         messages.pop();
     }
     

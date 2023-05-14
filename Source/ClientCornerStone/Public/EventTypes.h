@@ -8,17 +8,29 @@
 
 using json = nlohmann::json;
 
+class CLIENTCORNERSTONE_API EventType {
 
-struct StartGame {
-
-	StartGame(json message) {
-
-	}
+public:
+	virtual void Execute(class ABattleGameState* GameState) = 0;
 };
 
-struct AddController {
-	unsigned int id;
-	AddController(json message) {
-		id = message["id"];
+class StartGame : public EventType {
+public:
+	StartGame(json blob) {
+
 	}
+
+	virtual void Execute(class ABattleGameState* GameState) override;
 };
+
+class AddController : public EventType {
+	int id;
+public:
+	AddController(json blob) {
+		this->id = blob["id"];
+	}
+
+	virtual void Execute(class ABattleGameState* GameState) override;
+};
+
+EventType* CreateEventFromJson(json message);
