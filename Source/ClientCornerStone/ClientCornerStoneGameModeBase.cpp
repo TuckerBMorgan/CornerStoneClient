@@ -2,6 +2,8 @@
 
 
 #include "ClientCornerStoneGameModeBase.h"
+#include "BattleGameState.h"
+#include "HandController.h"
 #include <string>
 #include <vector>
 #include <queue>
@@ -43,9 +45,7 @@ void AClientCornerStoneGameModeBase::InitGame
 }
 
 void AClientCornerStoneGameModeBase::Tick(float DeltaTime) {
-    Super::Tick(DeltaTime);
-
-    
+    Super::Tick(DeltaTime);    
     std::unique_lock<std::mutex> a_lock(message_channel_lock);
     while (shrd_ptr_for_channel->empty() == false)
     {
@@ -53,6 +53,18 @@ void AClientCornerStoneGameModeBase::Tick(float DeltaTime) {
         messages.push(new_message);
         UE_LOG(LogTemp, Warning, TEXT("Some warning message"));
         shrd_ptr_for_channel->pop();
+    }
+
+
+    while (messages.empty() == false) {
+        auto new_message = std::move(messages.front());
+        if (new_message["eventType"] == "AddController") {
+            auto game_state = GetGameState<ABattleGameState>();
+            auto hand_controller = NewObject<UHandController>(UHandController::StaticClass());
+            hand_controller->Setup(new_message["id"]);
+            game_state->AddHandController(hand_controller);
+        }
+        messages.pop();
     }
     
 }
