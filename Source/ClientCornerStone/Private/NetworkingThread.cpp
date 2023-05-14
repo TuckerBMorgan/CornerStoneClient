@@ -25,7 +25,7 @@ constexpr auto DEFAULT_PORT = "7878";
 constexpr auto MESSAGE_BREAK_CHARACTER = '@';
 
 using json = nlohmann::json;
-
+#pragma optimize( "", off )
 std::vector<std::string> find_network_messages(const char* buffer, size_t buffer_length) {
     bool found_first_symbol = false;
     std::vector<std::string> return_buffer;
@@ -147,3 +147,4 @@ void network_thread(ThreadParameters thead_parameters) {
     std::cout << "It fucking exited" << std::endl;
 }
 
+#pragma optimize( "", on )

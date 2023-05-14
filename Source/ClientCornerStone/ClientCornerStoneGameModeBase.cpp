@@ -9,7 +9,7 @@
 #include <mutex>
 #include "NmJson.h"
 #include "NetworkingThread.h"
-
+#include "CoreMinimal.h"
 using json = nlohmann::json;
 
 
@@ -37,21 +37,22 @@ void AClientCornerStoneGameModeBase::InitGame
     shrd_ptr_for_to_server_channel = std::make_shared<std::queue<json>>(to_server_message_channel);
     ThreadParameters thread_params(message_channel_lock, shrd_ptr_for_channel, to_server_channel_lock, shrd_ptr_for_to_server_channel);
 
-  std::thread thread_object (network_thread, thread_params);
-  thread_object.detach();
+      std::thread thread_object (network_thread, thread_params);
+      thread_object.detach();
     
 }
 
 void AClientCornerStoneGameModeBase::Tick(float DeltaTime) {
     Super::Tick(DeltaTime);
 
-    /*
+    
     std::unique_lock<std::mutex> a_lock(message_channel_lock);
     while (shrd_ptr_for_channel->empty() == false)
     {
         auto new_message = std::move(shrd_ptr_for_channel->front());
         messages.push(new_message);
+        UE_LOG(LogTemp, Warning, TEXT("Some warning message"));
         shrd_ptr_for_channel->pop();
     }
-    */
+    
 }
