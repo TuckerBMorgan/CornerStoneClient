@@ -15,9 +15,17 @@ class CLIENTCORNERSTONE_API UHandController : public UObject
 	GENERATED_BODY()
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	int32 controller_id;
+	int32 ControllerId;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TSet<int32> CardIds;
+
 
 	void Setup(uint32 id) {
-		this->controller_id = id;
+		this->ControllerId = id;
 	};
+
+	void AddCardToController(uint32 id) {
+		this->CardIds.Add(id);
+	}
 };

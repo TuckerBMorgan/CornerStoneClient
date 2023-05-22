@@ -65,6 +65,7 @@ void AClientCornerStoneGameModeBase::Tick(float DeltaTime) {
         auto game_state = GetGameState<ABattleGameState>();
         NewEvent->Execute(game_state);
         messages.pop();
+        delete NewEvent;
     }
     
 }
